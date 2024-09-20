@@ -264,13 +264,15 @@ class RCJoystick:
         analog_raw and digital_raw attributes.
         """
         if self.serial_port.in_waiting:
-            data = self.serial_port.readline().strip()
             try:
+                data = self.serial_port.readline().strip()
                 values = list(map(float, data.decode().split(',')))
-                self.analog_raw = values[:6]
-                self.digital_raw = [int(v) for v in values[6:]]
-            except (ValueError, IndexError):
-                print("Error decoding data from Arduino")
+                if len(values) != len(self.analog_raw) + len(self.digital_raw):
+                    raise ValueError("Unexpected number of values received")
+                self.analog_raw = values[:len(self.analog_raw)]
+                self.digital_raw = [int(v) for v in values[len(self.analog_raw):]]
+            except (ValueError, UnicodeDecodeError, IndexError) as e:
+                print(f"Error decoding data from Arduino: {e}")
 
     def calibrate(self, samples=1000, delay=0.01):
         """
